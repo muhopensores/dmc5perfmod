@@ -1,0 +1,9 @@
+build64/
+bin64/
+hacklib.lib
+hacklib.pdb
+hacklibd.lib
+hacklibd.pdb
+MFReadWrite.exp
+MFReadWrite.lib
+MFReadWrite.pdb

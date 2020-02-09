@@ -1,0 +1,10 @@
+image: rafzi/hacklib-env
+
+pipelines:
+  default:
+    - step:
+        script:
+          - mkdir build
+          - cd build
+          - cmake ..
+          - make
