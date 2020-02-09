@@ -1,5 +1,5 @@
 # dmc5perfmod
-Devil May Cry 5 graphic mods for low spec PCs
+Devil May Cry 5 graphic mods for low spec PCs  
 ![Example gif](https://github.com/muhopensores/dmc5perfmod/raw/master/readme/example.gif)
 # Installing
 Place MFReadWrite.dll and performance.ini in the root of the game folder (where DevilMayCry5.exe is located).
