@@ -14,4 +14,4 @@ CTRL + F7 - Toggle IBL.
 # Uninstalling
 Remove MFReadWrite.dll, performance.ini
 # Building
-Can be build with either Intel Compiler or Clang 10.0 rc1 (at the time https://llvm.org/builds/). Run corresponding batfiles to generate VS solution and build.
+Can be built with either Intel Compiler or Clang 10.0 rc1 (at the time https://llvm.org/builds/). Run corresponding batfiles to generate VS solution and build.
