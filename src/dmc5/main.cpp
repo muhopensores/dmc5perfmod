@@ -76,6 +76,12 @@ naked void shadow_detour() {
 	}
 }
 
+naked void shadow_detour2() {
+	__asm {
+		mov BYTE PTR [r14+179h], 00
+	}
+}
+
 naked void ao_detour() {
 	__asm {
 		pushfq
@@ -206,7 +212,8 @@ public:
 		auto m_lodHook = m_hooker.hookJMP(lodLoc, 7, &lod_detour);
 		lod_jmpback = lodLoc + 7;
 
-		m_shadowLoc = hl::FindPattern("84 C0 74 07 C6 83 ?? ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 74 1A 80 BB ?? ?? ?? ?? ??");
+		//m_shadowLoc = hl::FindPattern("84 C0 74 07 C6 83 ?? ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 74 1A 80 BB ?? ?? ?? ?? ??");
+		m_shadowLoc = hl::FindPattern("41 80 BE 79 01 00 00 00 ?? ?? ?? ?? ?? 94 00 00 00");
 		toggleShadowPatch(m_enableShadows);
 
 		uintptr_t aoLoc = hl::FindPattern("F3 44 0F 10 47 34 44 38 6F 30");
@@ -242,7 +249,8 @@ public:
 
 	void toggleShadowPatch(bool value) {
 		if (value) {
-			m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour, 11);
+			//m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour, 11);
+			m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour2, 8);
 		}
 		else {
 			m_shadowPatch.revert();
