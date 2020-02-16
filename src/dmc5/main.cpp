@@ -212,8 +212,9 @@ public:
 		auto m_lodHook = m_hooker.hookJMP(lodLoc, 7, &lod_detour);
 		lod_jmpback = lodLoc + 7;
 
-		//m_shadowLoc = hl::FindPattern("84 C0 74 07 C6 83 ?? ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 74 1A 80 BB ?? ?? ?? ?? ??");
-		m_shadowLoc = hl::FindPattern("41 80 BE 79 01 00 00 00 ?? ?? ?? ?? ?? 94 00 00 00");
+		m_shadowLoc = hl::FindPattern("84 C0 74 07 C6 83 ?? ?? ?? ?? ?? 80 BB ?? ?? ?? ?? ?? 74 1A 80 BB ?? ?? ?? ?? ??");
+		m_shadowLoc2 = hl::FindPattern("0F 92 C0 80 BE 79 01 00 00 00 88 86 7A 01 00 00 0F 84 ?? ?? ?? ?? 80 7C 24 34 00 0F 84 ?? ?? ?? ?? 84 C0 0F 84 ?? ?? ?? ?? 41 8B 87 30 0E 00 00 48 8D 8E 70 01 00 00 41 8B D6");
+		//m_shadowLoc = hl::FindPattern("41 80 BE 79 01 00 00 00 ?? ?? ?? ?? ?? 94 00 00 00");
 		toggleShadowPatch(m_enableShadows);
 
 		uintptr_t aoLoc = hl::FindPattern("F3 44 0F 10 47 34 44 38 6F 30");
@@ -249,11 +250,15 @@ public:
 
 	void toggleShadowPatch(bool value) {
 		if (value) {
-			//m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour, 11);
-			m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour2, 8);
+			if (!m_shadowLoc || !m_shadowLoc2)
+				return;
+			m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour, 11);
+			m_shadowPatch2.apply(m_shadowLoc2, "\x31\xC0\x90", 3);
+			//m_shadowPatch.apply(m_shadowLoc, (const char*)&shadow_detour2, 8);
 		}
 		else {
 			m_shadowPatch.revert();
+			m_shadowPatch2.revert();
 		}
 	}
 
@@ -291,8 +296,10 @@ private:
 	bool       m_enableIbl       = false;
 	uintptr_t  m_iblLoc          = NULL;
 	uintptr_t  m_shadowLoc       = NULL;
+	uintptr_t  m_shadowLoc2      = NULL;
 	hl::Patch  m_iblPatch;
 	hl::Patch  m_shadowPatch;
+	hl::Patch  m_shadowPatch2;
     hl::Hooker m_hooker;
 	
 
