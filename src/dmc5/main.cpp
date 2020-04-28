@@ -1,13 +1,15 @@
 ﻿#include "hacklib/Main.h"
-#include "hacklib/ConsoleEx.h"
-#include "hacklib/D3DDeviceFetcher.h"
+//#include "hacklib/ConsoleEx.h"
+//"hacklib/D3DDeviceFetcher.h"
 #include "hacklib/Hooker.h"
 #include "hacklib/PatternScanner.h"
 #include "hacklib/Patch.h"
 #include "hacklib/Input.h"
 #include "util/ini.h"
-#include <d3d11.h>
+//#include <d3d11.h>
 #include <cstdio>
+#include <thread>
+#include <chrono>
 
 #define naked __declspec( naked )
 /*#ifdef __INTEL_COMPILER
@@ -23,6 +25,8 @@ extern "C" {
 
 	HMODULE g_d3d11 = NULL;
 
+	char lodlevel = 4;
+
 	uintptr_t probe_jmpback   = NULL;
 	uintptr_t lod_jmpback     = NULL;
 	uintptr_t shadow_jmpback  = NULL;
@@ -37,6 +41,7 @@ extern "C" {
 	bool g_enableCubemaps = false;
 	bool g_enableFog      = false;
 	bool g_enableIbl      = false;
+	bool g_maxLods        = false;
 }
 
 naked void probe_detour() {
@@ -57,7 +62,8 @@ naked void lod_detour() {
 		pushfq
 		cmp BYTE PTR [g_enableLods], 0
 		je skipWrite
-		mov BYTE PTR [rcx+250h], 4
+		mov al, BYTE PTR [lodlevel]
+		mov BYTE PTR [rcx+250h], al
 		mov BYTE PTR [rcx+24Ch], 1
 	skipWrite:
 		popfq
@@ -173,6 +179,16 @@ void failed() {
 
 #pragma endregion
 
+std::string narrow(std::wstring_view str) {
+	auto length = WideCharToMultiByte(CP_UTF8, 0, str.data(), (int)str.length(), nullptr, 0, nullptr, nullptr);
+	std::string narrowStr{};
+
+	narrowStr.resize(length);
+	WideCharToMultiByte(CP_UTF8, 0, str.data(), (int)str.length(), (LPSTR)narrowStr.c_str(), length, nullptr, nullptr);
+
+	return narrowStr;
+}
+
 class MyMain : public hl::Main
 {
 public:
@@ -190,19 +206,31 @@ public:
 			failed();
 		}
 
-		mINI::INIFile file("performance.ini");
-		mINI::INIStructure ini;
-		file.read(ini);
-		
-		// g_enableSomething is for a specific patches, but make it more clear
-		// for end users in the ini file.
-		g_enableProbes   = ini["options"]["disable_probes"]   != "0";
-		g_enableLods     = ini["options"]["disable_lods"]     != "0";
-		m_enableShadows  = ini["options"]["disable_shadows"]  != "0";
-		g_enableAo       = ini["options"]["disable_ao"]       != "0";
-		g_enableCubemaps = ini["options"]["disable_cubemaps"] != "0";
-		g_enableFog      = ini["options"]["disable_fog"]      != "0";
-		m_enableIbl      = ini["options"]["disable_ibl"]      != "0";
+		wchar_t cwdbuffer[MAX_PATH]{ 0 };
+		if (GetCurrentDirectoryW(MAX_PATH, cwdbuffer) != 0) {
+			std::wstring wpath{ std::wstring { cwdbuffer } +L"\\performance.ini" };
+
+
+			mINI::INIFile file(wpath);
+			mINI::INIStructure ini;
+			file.read(ini);
+
+			// g_enableSomething is for a specific patches, but make it more clear
+			// for end users in the ini file.
+			g_enableProbes = ini[L"options"][L"disable_probes"] != L"0";
+			g_enableLods = ini[L"options"][L"disable_lods"] != L"0";
+			m_enableShadows = ini[L"options"][L"disable_shadows"] != L"0";
+			g_enableAo = ini[L"options"][L"disable_ao"] != L"0";
+			g_enableCubemaps = ini[L"options"][L"disable_cubemaps"] != L"0";
+			g_enableFog = ini[L"options"][L"disable_fog"] != L"0";
+			m_enableIbl = ini[L"options"][L"disable_ibl"] != L"0";
+			g_maxLods = ini[L"options"][L"max_lods"] != L"0";
+		}
+		else {
+			char errorbuf[MAX_PATH + 48];
+			sprintf(errorbuf, "Failed to load settings from ini file. %s", cwdbuffer);
+			MessageBox(NULL, errorbuf, "CWD error", MB_ICONERROR);
+		}
 
 		uintptr_t probesLoc = hl::FindPattern("44 38 AB 50 01 00 00");
 		auto m_probeHook = m_hooker.hookJMP(probesLoc, 7, &probe_detour);
@@ -232,10 +260,10 @@ public:
 		//uintptr_t iblLoc = hl::FindPattern("48 8B 7B 10 80 7F 13 00 7D 08 48 8B CF E8 ?? ?? ?? ?? 80 7F 13 01 75 0A 80 7B 31 00");
 		m_iblLoc = hl::FindPattern("0F 1F 40 00 48 8B 7B 10 80 7F 13 00 7D 08 48 8B CF E8 ?? ?? ?? ?? 80 7F 13 01 75 0A 80 7B 31 00");
 		toggleIBLPatch(m_enableIbl);
-		//
-		//auto m_iblHook = m_hooker.hookJMP(iblLoc, 8, &ibl_detour);
-#if 0
-#endif
+
+		if (g_maxLods) {
+			lodlevel = 0;
+		}
 		return true;
     }
 
